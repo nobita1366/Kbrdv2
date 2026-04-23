@@ -1,0 +1,3 @@
+-keepattributes *Annotation*
+-keep class androidx.compose.** { *; }
+-keep class com.flexboard.** { *; }

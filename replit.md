@@ -25,3 +25,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Side project: FlexBoard Pro (Android keyboard APK)
+
+`flexboard-pro/` contains a complete native Android Kotlin/Jetpack Compose IME project (separate from the pnpm monorepo). It is built in the cloud via the GitHub Actions workflow at `.github/workflows/android-build.yml` — pushing the repo to GitHub produces downloadable debug + release APK artifacts. Includes 9 modules (IME, Auto-Type, suggestions, themes, fonts, clipboard, macros, multi-language, settings) plus an auto-save sentences feature backed by Room.
