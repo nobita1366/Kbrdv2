@@ -23,7 +23,7 @@ class FlexboardIMEService : InputMethodService() {
         clipboardWatcher = ClipboardWatcher(this).also { it.start() }
         MacroEngine.preload(this)
         scope.launch(Dispatchers.IO) { SuggestionEngine.ensureSeeded(this@FlexboardIMEService) }
-        // Hook auto-type direct injection through IME's input connection
+
         AutoTypeEngine.injector = { text ->
             val ic = currentInputConnection
             if (ic != null) {
@@ -31,6 +31,26 @@ class FlexboardIMEService : InputMethodService() {
                 true
             } else {
                 FlexboardAccessibilityService.instance?.typeIntoFocused(text) ?: false
+            }
+        }
+        AutoTypeEngine.sender = {
+            val ic = currentInputConnection
+            val ei = currentInputEditorInfo
+            if (ic == null) {
+                FlexboardAccessibilityService.instance?.pressSend() ?: false
+            } else {
+                val actionId = ei?.actionId ?: 0
+                val maskedAction = (ei?.imeOptions ?: 0) and EditorInfo.IME_MASK_ACTION
+                val ok = when {
+                    actionId != 0 -> ic.performEditorAction(actionId)
+                    maskedAction != 0 && maskedAction != EditorInfo.IME_ACTION_NONE ->
+                        ic.performEditorAction(maskedAction)
+                    else -> false
+                }
+                if (ok) true
+                else (FlexboardAccessibilityService.instance?.pressSend() ?: false).also {
+                    if (!it) ic.commitText("\n", 1)
+                }
             }
         }
     }
@@ -41,9 +61,9 @@ class FlexboardIMEService : InputMethodService() {
             onKey = { handleKey(it) },
             getSuggestions = { currentSuggestions },
             onSuggestion = { commitSuggestion(it) },
-            onAutoTypeOpen = { openSettingsTo("autotype") },
             onClipboardOpen = { openSettingsTo("clipboard") },
-            onSwitchLanguage = { switchLanguage() }
+            onSwitchLanguage = { switchLanguage() },
+            onOpenSettings = { openSettingsTo("home") }
         )
         keyboardView = view
         return view
@@ -56,7 +76,6 @@ class FlexboardIMEService : InputMethodService() {
     }
 
     override fun onFinishInput() {
-        // auto-save sentence on focus loss
         flushSentence()
         super.onFinishInput()
     }
@@ -64,6 +83,7 @@ class FlexboardIMEService : InputMethodService() {
     override fun onDestroy() {
         flushSentence()
         AutoTypeEngine.injector = null
+        AutoTypeEngine.sender = null
         clipboardWatcher?.stop()
         scope.cancel()
         super.onDestroy()
@@ -78,10 +98,13 @@ class FlexboardIMEService : InputMethodService() {
             }
             KeyType.ENTER -> {
                 flushSentence()
-                ic.commitText("\n", 1)
+                val ei = currentInputEditorInfo
+                val action = (ei?.imeOptions ?: 0) and EditorInfo.IME_MASK_ACTION
+                if (action != 0 && action != EditorInfo.IME_ACTION_NONE) {
+                    if (!ic.performEditorAction(action)) ic.commitText("\n", 1)
+                } else ic.commitText("\n", 1)
             }
             KeyType.SPACE -> {
-                // macro check
                 val before = ic.getTextBeforeCursor(64, 0)?.toString() ?: ""
                 val expansion = MacroEngine.checkExpansion(before)
                 if (expansion != null) {
@@ -93,12 +116,10 @@ class FlexboardIMEService : InputMethodService() {
                     ic.commitText(" ", 1)
                     sentenceBuf.append(' ')
                 }
-                // learn the last word
                 val lastWord = before.takeLastWhile { it.isLetterOrDigit() }
                 if (lastWord.isNotEmpty()) scope.launch(Dispatchers.IO) {
                     SuggestionEngine.learnWord(this@FlexboardIMEService, lastWord)
                 }
-                // sentence terminator detection? handled in append below
                 updateSuggestions("")
             }
             KeyType.PERIOD, KeyType.COMMA -> {

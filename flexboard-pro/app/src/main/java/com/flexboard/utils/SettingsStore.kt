@@ -27,10 +27,12 @@ object SettingsStore {
     const val KEY_SOUND = "sound_enabled"
     const val KEY_SOUND_VOLUME = "sound_volume"
     const val KEY_KB_HEIGHT_PCT = "kb_height_pct"
+    const val KEY_KEY_HEIGHT_DP = "key_height_dp"
     const val KEY_KEY_TEXT_SIZE = "key_text_size"
     const val KEY_FONT_PATH = "custom_font_path"
     const val KEY_FONT_BOLD = "font_bold"
     const val KEY_FONT_ITALIC = "font_italic"
+    const val KEY_FONTS_LIST = "fonts_list_json"
     const val KEY_LANGUAGE = "current_language"
 
     // Auto-Type
@@ -38,7 +40,10 @@ object SettingsStore {
     const val KEY_AT_LOOP = "autotype_loop"
     const val KEY_AT_SEND_MODE = "autotype_send_mode" // direct | paste
     const val KEY_AT_LAST_FILE = "autotype_last_file"
+    const val KEY_AT_LAST_FILE_NAME = "autotype_last_file_name"
     const val KEY_AT_START_LINE = "autotype_start_line"
+    const val KEY_AT_AUTO_SEND = "autotype_auto_send"
+    const val KEY_AT_CUSTOM_TEXT = "autotype_custom_text"
 
     // Suggestions / Auto-save sentence
     const val KEY_SUGGESTIONS = "suggestions_enabled"
@@ -48,4 +53,7 @@ object SettingsStore {
 
     // Clipboard
     const val KEY_CLIP_AUTO_DELETE_DAYS = "clip_auto_delete_days"
+
+    // Emoji
+    const val KEY_EMOJI_RECENT = "emoji_recent"
 }

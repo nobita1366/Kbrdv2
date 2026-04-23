@@ -8,7 +8,10 @@ data class KeyDef(
     val longPress: String? = null
 )
 
-enum class KeyType { CHAR, SHIFT, BACKSPACE, ENTER, SPACE, SYMBOLS, LANGUAGE, NUMBERS, COMMA, PERIOD, AUTOTYPE, CLIPBOARD }
+enum class KeyType {
+    CHAR, SHIFT, BACKSPACE, ENTER, SPACE, SYMBOLS, LANGUAGE, NUMBERS,
+    COMMA, PERIOD, AUTOTYPE, CLIPBOARD, EMOJI
+}
 
 data class KbLayout(val rows: List<List<KeyDef>>)
 
@@ -17,24 +20,25 @@ object KeyboardLayouts {
     private fun row(vararg labels: String, longs: Map<String, String> = emptyMap()): List<KeyDef> =
         labels.map { KeyDef(it, longPress = longs[it]) }
 
+    private fun bottomRow(periodLabel: String = ".", commaLabel: String = ","): List<KeyDef> = listOf(
+        KeyDef("?123", "symbols", widthWeight = 1.4f, type = KeyType.SYMBOLS),
+        KeyDef("😀", "emoji", widthWeight = 1.0f, type = KeyType.EMOJI),
+        KeyDef("🌐", "lang", widthWeight = 1.0f, type = KeyType.LANGUAGE),
+        KeyDef(commaLabel, commaLabel, widthWeight = 1.0f, type = KeyType.COMMA),
+        KeyDef("space", " ", widthWeight = 4.0f, type = KeyType.SPACE),
+        KeyDef(periodLabel, periodLabel, widthWeight = 1.0f, type = KeyType.PERIOD),
+        KeyDef("⏎", "enter", widthWeight = 1.6f, type = KeyType.ENTER)
+    )
+
     val ENGLISH_QWERTY = KbLayout(
         rows = listOf(
             listOf("1","2","3","4","5","6","7","8","9","0").map { KeyDef(it) },
             row("q","w","e","r","t","y","u","i","o","p", longs = mapOf("e" to "èéêë","u" to "ùúûü","i" to "ìíîï","o" to "òóôõö")),
             row("a","s","d","f","g","h","j","k","l", longs = mapOf("a" to "àáâãäå")),
-            listOf(
-                KeyDef("⇧", "shift", widthWeight = 1.5f, type = KeyType.SHIFT)
-            ) + row("z","x","c","v","b","n","m") + listOf(
-                KeyDef("⌫", "back", widthWeight = 1.5f, type = KeyType.BACKSPACE)
-            ),
-            listOf(
-                KeyDef("?123", "symbols", widthWeight = 1.4f, type = KeyType.SYMBOLS),
-                KeyDef("🌐", "lang", widthWeight = 1.0f, type = KeyType.LANGUAGE),
-                KeyDef(",", ",", widthWeight = 1.0f, type = KeyType.COMMA),
-                KeyDef("space", " ", widthWeight = 4.5f, type = KeyType.SPACE),
-                KeyDef(".", ".", widthWeight = 1.0f, type = KeyType.PERIOD),
-                KeyDef("⏎", "enter", widthWeight = 1.6f, type = KeyType.ENTER)
-            )
+            listOf(KeyDef("⇧", "shift", widthWeight = 1.5f, type = KeyType.SHIFT))
+                + row("z","x","c","v","b","n","m")
+                + listOf(KeyDef("⌫", "back", widthWeight = 1.5f, type = KeyType.BACKSPACE)),
+            bottomRow()
         )
     )
 
@@ -47,9 +51,10 @@ object KeyboardLayouts {
                 + listOf(KeyDef("⌫", "back", widthWeight = 1.4f, type = KeyType.BACKSPACE)),
             listOf(
                 KeyDef("ABC", "abc", widthWeight = 1.4f, type = KeyType.SYMBOLS),
+                KeyDef("😀", "emoji", widthWeight = 1.0f, type = KeyType.EMOJI),
                 KeyDef("🌐", "lang", widthWeight = 1.0f, type = KeyType.LANGUAGE),
                 KeyDef(",", ",", widthWeight = 1.0f, type = KeyType.COMMA),
-                KeyDef("space", " ", widthWeight = 4.5f, type = KeyType.SPACE),
+                KeyDef("space", " ", widthWeight = 4.0f, type = KeyType.SPACE),
                 KeyDef(".", ".", widthWeight = 1.0f, type = KeyType.PERIOD),
                 KeyDef("⏎", "enter", widthWeight = 1.6f, type = KeyType.ENTER)
             )
@@ -64,14 +69,7 @@ object KeyboardLayouts {
             listOf(KeyDef("⇧", "shift", widthWeight = 1.5f, type = KeyType.SHIFT))
                 + row("ز","خ","چ","و","ب","ن","م")
                 + listOf(KeyDef("⌫", "back", widthWeight = 1.5f, type = KeyType.BACKSPACE)),
-            listOf(
-                KeyDef("?123", "symbols", widthWeight = 1.4f, type = KeyType.SYMBOLS),
-                KeyDef("🌐", "lang", widthWeight = 1.0f, type = KeyType.LANGUAGE),
-                KeyDef("،", "،", widthWeight = 1.0f, type = KeyType.COMMA),
-                KeyDef("space", " ", widthWeight = 4.5f, type = KeyType.SPACE),
-                KeyDef("۔", "۔", widthWeight = 1.0f, type = KeyType.PERIOD),
-                KeyDef("⏎", "enter", widthWeight = 1.6f, type = KeyType.ENTER)
-            )
+            bottomRow(periodLabel = "۔", commaLabel = "،")
         )
     )
 
@@ -83,27 +81,7 @@ object KeyboardLayouts {
             listOf(KeyDef("⇧", "shift", widthWeight = 1.5f, type = KeyType.SHIFT))
                 + row("ئ","ء","ؤ","ر","لا","ى","ة")
                 + listOf(KeyDef("⌫", "back", widthWeight = 1.5f, type = KeyType.BACKSPACE)),
-            listOf(
-                KeyDef("?123", "symbols", widthWeight = 1.4f, type = KeyType.SYMBOLS),
-                KeyDef("🌐", "lang", widthWeight = 1.0f, type = KeyType.LANGUAGE),
-                KeyDef("،", "،", widthWeight = 1.0f, type = KeyType.COMMA),
-                KeyDef("space", " ", widthWeight = 4.5f, type = KeyType.SPACE),
-                KeyDef(".", ".", widthWeight = 1.0f, type = KeyType.PERIOD),
-                KeyDef("⏎", "enter", widthWeight = 1.6f, type = KeyType.ENTER)
-            )
-        )
-    )
-
-    val NUMPAD = KbLayout(
-        rows = listOf(
-            row("7","8","9"),
-            row("4","5","6"),
-            row("1","2","3"),
-            listOf(
-                KeyDef("ABC", "abc", widthWeight = 1f, type = KeyType.SYMBOLS),
-                KeyDef("0", "0", widthWeight = 1f),
-                KeyDef("⌫", "back", widthWeight = 1f, type = KeyType.BACKSPACE)
-            )
+            bottomRow(periodLabel = ".", commaLabel = "،")
         )
     )
 

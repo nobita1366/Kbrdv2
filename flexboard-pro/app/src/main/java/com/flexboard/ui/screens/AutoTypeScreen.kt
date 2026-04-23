@@ -13,7 +13,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.flexboard.ime.AutoTypeEngine
 import com.flexboard.utils.SettingsStore
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AutoTypeScreen(
@@ -27,8 +26,10 @@ fun AutoTypeScreen(
     val prefs = SettingsStore.prefs(ctx)
     var delay by remember { mutableStateOf(prefs.getInt(SettingsStore.KEY_AT_DELAY, 5)) }
     var loop by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_AT_LOOP, false)) }
+    var autoSend by remember { mutableStateOf(prefs.getBoolean(SettingsStore.KEY_AT_AUTO_SEND, true)) }
     var sendMode by remember { mutableStateOf(prefs.getString(SettingsStore.KEY_AT_SEND_MODE, "direct") ?: "direct") }
     var startLine by remember { mutableStateOf(prefs.getInt(SettingsStore.KEY_AT_START_LINE, 0)) }
+    var customText by remember { mutableStateOf(prefs.getString(SettingsStore.KEY_AT_CUSTOM_TEXT, "") ?: "") }
 
     val state by AutoTypeEngine.state.collectAsState()
 
@@ -40,16 +41,44 @@ fun AutoTypeScreen(
 
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1F1F1F))) {
             Column(Modifier.padding(16.dp)) {
+                Text("Source A · Text file (.txt)", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
                 Button(onClick = onPickTxt, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00), contentColor = Color.Black)) {
                     Text("Load .txt File")
                 }
                 Spacer(Modifier.height(6.dp))
-                Text("Loaded: ${state.total} messages", color = Color.White)
+                val name = state.sourceName.ifBlank { "—" }
+                Text("Loaded: $name · ${state.total} lines", color = Color.White)
             }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1F1F1F))) {
             Column(Modifier.padding(16.dp)) {
+                Text("Source B · Custom write text", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = customText,
+                    onValueChange = { customText = it },
+                    label = { Text("Type or paste lines (one message per line)") },
+                    minLines = 4, maxLines = 10,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        AutoTypeEngine.loadFromText(ctx, customText, "Custom text")
+                    }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00), contentColor = Color.Black)) {
+                        Text("Use this text")
+                    }
+                    OutlinedButton(onClick = { customText = "" }) { Text("Clear") }
+                }
+            }
+        }
+
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1F1F1F))) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Settings", color = Color.White, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
                 Text("Delay between messages: $delay sec", color = Color.White)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = {
@@ -66,6 +95,13 @@ fun AutoTypeScreen(
                     }) { Text("+") }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(checked = autoSend, onCheckedChange = {
+                        autoSend = it; prefs.edit().putBoolean(SettingsStore.KEY_AT_AUTO_SEND, it).apply()
+                    })
+                    Spacer(Modifier.width(8.dp))
+                    Text("Auto-send after each line (press Send/Enter)", color = Color.White)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Switch(checked = loop, onCheckedChange = {
                         loop = it; prefs.edit().putBoolean(SettingsStore.KEY_AT_LOOP, it).apply()
                     })
@@ -76,11 +112,11 @@ fun AutoTypeScreen(
                 Row {
                     FilterChip(selected = sendMode == "direct", onClick = {
                         sendMode = "direct"; prefs.edit().putString(SettingsStore.KEY_AT_SEND_MODE, sendMode).apply()
-                    }, label = { Text("Direct") })
+                    }, label = { Text("Direct (IME)") })
                     Spacer(Modifier.width(8.dp))
                     FilterChip(selected = sendMode == "paste", onClick = {
                         sendMode = "paste"; prefs.edit().putString(SettingsStore.KEY_AT_SEND_MODE, sendMode).apply()
-                    }, label = { Text("Paste") })
+                    }, label = { Text("Paste (Accessibility)") })
                 }
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -126,7 +162,7 @@ fun AutoTypeScreen(
         }
 
         Text(
-            "Note: Direct mode currently injects via the keyboard's input connection. For background apps, enable Accessibility and use Paste mode.",
+            "Tip: Auto-send works best with Accessibility ON. Direct (IME) mode types into the focused field; if the target app exposes a Send IME action (chat apps usually do), it's pressed. Otherwise FlexBoard finds and clicks the Send button via Accessibility.",
             color = Color.LightGray
         )
     }

@@ -37,6 +37,40 @@ class FlexboardAccessibilityService : AccessibilityService() {
         return node.performAction(AccessibilityNodeInfo.ACTION_PASTE)
     }
 
+    /** Try to click the visible "Send" button (WhatsApp/Messenger/Telegram/SMS).
+     * Heuristic: searches for clickable nodes whose contentDescription/text matches Send synonyms. */
+    fun pressSend(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val node = findSendNode(root) ?: return false
+        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    }
+
+    private val sendKeywords = listOf(
+        "send", "send message", "sent", "submit",
+        "بھیجیں", "ارسال", "إرسال", "ارسل"
+    )
+
+    private fun findSendNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (node == null) return null
+        val cd = node.contentDescription?.toString()?.lowercase() ?: ""
+        val tx = node.text?.toString()?.lowercase() ?: ""
+        val matches = sendKeywords.any { kw ->
+            val k = kw.lowercase()
+            cd == k || cd.startsWith(k) || tx == k
+        }
+        if (matches && (node.isClickable || node.isEnabled)) {
+            // Walk up to find a clickable ancestor if needed
+            var n: AccessibilityNodeInfo? = node
+            while (n != null && !n.isClickable) n = n.parent
+            return n ?: node
+        }
+        for (i in 0 until node.childCount) {
+            val r = findSendNode(node.getChild(i))
+            if (r != null) return r
+        }
+        return null
+    }
+
     private fun findFocusedEditable(): AccessibilityNodeInfo? {
         val root = rootInActiveWindow ?: return null
         return root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
