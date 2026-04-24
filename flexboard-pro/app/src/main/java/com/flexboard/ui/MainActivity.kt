@@ -58,28 +58,54 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val initialSection = intent?.getStringExtra("section")
-        setContent {
-            FlexboardTheme {
-                AppRoot(
-                    initialSection = initialSection,
-                    onPickTxt = { pickFile.launch(arrayOf("text/plain", "*/*")) },
-                    onPickFont = { pickFont.launch(arrayOf("*/*")) },
-                    onPickBg = { pickBg.launch(arrayOf("image/*")) },
-                    onOpenImeSettings = { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) },
-                    onOpenAccessibility = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-                    onStartAutoType = {
-                        AutoTypeForegroundService.start(this)
-                        AutoTypeEngine.start(this, com.flexboard.utils.SettingsStore.prefs(this).getInt(com.flexboard.utils.SettingsStore.KEY_AT_START_LINE, 0))
-                    },
-                    onPause = { AutoTypeEngine.pause() },
-                    onResume = { AutoTypeEngine.resume() },
-                    onStop = {
-                        AutoTypeEngine.stop()
-                        AutoTypeForegroundService.stop(this)
-                    }
-                )
+        val initialSection = try { intent?.getStringExtra("section") } catch (_: Throwable) { null }
+        try {
+            setContent {
+                FlexboardTheme {
+                    AppRoot(
+                        initialSection = initialSection,
+                        onPickTxt = { safeLaunch { pickFile.launch(arrayOf("text/plain", "*/*")) } },
+                        onPickFont = { safeLaunch { pickFont.launch(arrayOf("*/*")) } },
+                        onPickBg = { safeLaunch { pickBg.launch(arrayOf("image/*")) } },
+                        onOpenImeSettings = { safeLaunch { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) } },
+                        onOpenAccessibility = { safeLaunch { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } },
+                        onStartAutoType = {
+                            safeLaunch {
+                                AutoTypeForegroundService.start(this)
+                                AutoTypeEngine.start(
+                                    this,
+                                    com.flexboard.utils.SettingsStore.prefs(this)
+                                        .getInt(com.flexboard.utils.SettingsStore.KEY_AT_START_LINE, 0)
+                                )
+                            }
+                        },
+                        onPause = { safeLaunch { AutoTypeEngine.pause() } },
+                        onResume = { safeLaunch { AutoTypeEngine.resume() } },
+                        onStop = {
+                            safeLaunch {
+                                AutoTypeEngine.stop()
+                                AutoTypeForegroundService.stop(this)
+                            }
+                        }
+                    )
+                }
             }
+        } catch (t: Throwable) {
+            android.util.Log.e("FlexBoardMain", "setContent failed", t)
+            // Fallback minimal UI so the app does not die silently.
+            val tv = android.widget.TextView(this).apply {
+                text = "FlexBoard Pro\n\nUI failed to initialize:\n${t.javaClass.simpleName}: ${t.message}\n\nPlease share crash log."
+                setPadding(40, 80, 40, 40)
+                setTextColor(android.graphics.Color.WHITE)
+                setBackgroundColor(android.graphics.Color.parseColor("#0D0D0D"))
+            }
+            setContentView(tv)
+        }
+    }
+
+    private inline fun safeLaunch(block: () -> Unit) {
+        try { block() } catch (t: Throwable) {
+            android.util.Log.e("FlexBoardMain", "action failed", t)
         }
     }
 }
